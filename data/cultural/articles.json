@@ -1,0 +1,38 @@
+[
+  {
+    "id": "cultural-coping-01",
+    "domain": "cultural",
+    "topic": "coping",
+    "audience": "general",
+    "language": "en",
+    "title": "Sabr, Tawakkul, and Professional Help",
+    "text": "In Islamic and Pakistani traditions, 'Sabr' (patient persistence) and 'Tawakkul' (trust in God's plan) are powerful spiritual resources that provide resilience during hardships. However, a common cultural misconception is that seeking psychological help or therapy implies a lack of faith or gratitude. In reality, seeking help aligns perfectly with Islamic teachings. Seeking medicine, therapy, and professional guidance is a form of active coping—taking practical steps while maintaining faith. Professional therapy is a tool that helps individuals build the cognitive skills necessary to practice Sabr effectively."
+  },
+  {
+    "id": "cultural-family-01",
+    "domain": "cultural",
+    "topic": "family_dynamics",
+    "audience": "general",
+    "language": "en",
+    "title": "Navigating Mental Health in Joint Families",
+    "text": "Living in a joint family system in Pakistan offers deep communal support and shared responsibilities, but it can also present unique boundary challenges, lack of privacy, and pressure to conform to elder expectations. Stress or anxiety arising from joint family friction is highly common. Navigating this requires learning assertive, respectful communication. Expressing needs using 'I' statements (e.g., 'I feel overwhelmed when...') rather than accusatory statements can reduce defensiveness. Finding a trusted family ally or setting soft boundaries for quiet personal time can also significantly protect mental health."
+  },
+  {
+    "id": "cultural-stigma-01",
+    "domain": "cultural",
+    "topic": "stigma",
+    "audience": "general",
+    "language": "en",
+    "title": "Overcoming the Stigma of 'Log Kya Kahenge'",
+    "text": "The phrase 'Log kya kahenge?' (What will people say?) is a major source of anxiety and a barrier to seeking mental health support in Pakistan. Mental struggles are sometimes dismissed as 'nakhray' (excuses) or 'attention-seeking behavior'. Overcoming this stigma involves recognizing that mental health is as physical and real as cardiovascular or dental health. Your well-being and peace of mind are far more important than external societal gossip. Speaking to a therapist is confidential, and seeking support is a sign of immense courage and self-awareness."
+  },
+  {
+    "id": "cultural-gender-01",
+    "domain": "cultural",
+    "topic": "gender_stressors",
+    "audience": "general",
+    "language": "en",
+    "title": "Gender Roles and Mental Well-being in Pakistan",
+    "text": "Societal expectations place distinct pressures on genders in Pakistan. Men often carry the sole financial burden and are conditioned to suppress vulnerability ('boys don't cry'), leading to isolated stress. Women frequently juggle domestic management, childcare, and career aspirations, sometimes navigating marriage pressure or lack of autonomy. Recognizing these gendered stressors is crucial. Men are encouraged to view expressing emotion as a strength, and women are encouraged to seek self-actualization and set healthy boundaries, ensuring they do not sacrifice their mental health to satisfy societal scripts."
+  }
+]

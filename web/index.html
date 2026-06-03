@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamsafar | Stateful Multi-Agent AI Support System</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js CDN for 3D Renderings -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Three.js Canvas Container (Calming 3D Breathing Orb Background) -->
+    <div id="three-container"></div>
+    <div class="glass-bg"></div>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="fa-solid fa-wind logo-icon"></i>
+                <div class="logo-text">
+                    <h1>Hamsafar</h1>
+                    <p>Stateful Multi-Agent Support System</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button id="reset-session-btn" class="btn btn-secondary" title="Reset Session">
+                    <i class="fa-solid fa-arrows-rotate"></i> Reset Session
+                </button>
+                <div class="session-badge">
+                    <i class="fa-solid fa-fingerprint"></i> ID: <span id="session-id-display">...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="main-layout">
+            
+            <!-- LEFT COLUMN: CHAT PANEL -->
+            <section class="chat-panel">
+                <div class="panel-card glassmorphism">
+                    <div class="chat-header">
+                        <div class="counselor-profile">
+                            <div class="avatar-ring">
+                                <div class="avatar">HS</div>
+                            </div>
+                            <div class="profile-info">
+                                <h3>Companion Guide</h3>
+                                <p><span class="status-indicator"></span> Deep Breathing Active</p>
+                            </div>
+                        </div>
+                        <div class="profile-actions">
+                            <label class="toggle-switch" title="Toggle Mood Tracking Consent">
+                                <input type="checkbox" id="consent-mood-checkbox">
+                                <span class="slider"></span>
+                                <span class="toggle-label"><i class="fa-solid fa-chart-line"></i> Mood Sync</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Messages container -->
+                    <div id="chat-messages" class="chat-messages">
+                        <!-- Welcomes slide in here dynamically -->
+                    </div>
+
+                    <!-- Suggestion pills for CBT -->
+                    <div class="suggestion-pills">
+                        <div class="pill-group">
+                            <button class="pill" onclick="triggerCBTPill('Start Thought Record')">
+                                <i class="fa-solid fa-pen-clip"></i> Thought Record
+                            </button>
+                            <button class="pill" onclick="triggerCBTPill('Worry Postponement')">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Worry Postponement
+                            </button>
+                            <button class="pill" onclick="triggerCBTPill('Behavioral Activation')">
+                                <i class="fa-solid fa-calendar-plus"></i> Activity Scheduling
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Input form -->
+                    <form id="chat-form" class="chat-form">
+                        <input type="text" id="chat-input" placeholder="Share how you are feeling (English / Roman Urdu)..." autocomplete="off" required>
+                        <button type="submit" id="send-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: COGNITIVE TRACE TELEMETRY -->
+            <section class="telemetry-panel">
+                <div class="panel-card glassmorphism scrollable">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-heart-pulse telemetry-icon"></i> Cognitive Pipeline Trace</h2>
+                        <div class="breathing-guide">
+                            <i class="fa-solid fa-wind breathing-wind-icon"></i> <span id="breathing-status">Inhale Slowly...</span>
+                        </div>
+                    </div>
+
+                    <div class="telemetry-content">
+                        <!-- WELCOME TELEMETRY STATE -->
+                        <div id="no-trace-placeholder" class="telemetry-card empty-state">
+                            <i class="fa-solid fa-circle-nodes placeholder-icon"></i>
+                            <h3>No active trace</h3>
+                            <p>Send a message or trigger an exercise to visualize the normalizations, classifications, and specialist router pathways.</p>
+                        </div>
+
+                        <!-- LIVE TRACE DISPLAY -->
+                        <div id="trace-display" class="trace-display hidden">
+                            
+                            <!-- 1. BILINGUAL NORMALIZATION -->
+                            <div class="telemetry-card" id="card-normalizer">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-language icon-cyan"></i> 1. Bilingual Normalizer</h3>
+                                    <span class="tech-tag tag-cyan" id="trace-normalizer-lang">...</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-comparison">
+                                        <div class="comparison-block">
+                                            <span class="label">Original Message:</span>
+                                            <p id="trace-normalizer-original" class="text-mute">...</p>
+                                        </div>
+                                        <div class="comparison-block">
+                                            <span class="label">Normalized Output:</span>
+                                            <p id="trace-normalizer-output" class="text-highlight">...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. ALWAYS-ON SAFETY GUARDIAN -->
+                            <div class="telemetry-card" id="card-safety">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-shield-halved icon-cyan"></i> 2. Safety Guardian</h3>
+                                    <span class="tech-tag tag-cyan" id="trace-safety-tier">Tier X</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="safety-reasoning">
+                                        <p id="trace-safety-reasoning">...</p>
+                                    </div>
+                                    <div class="safety-signals">
+                                        <span class="label">Signals Detected:</span>
+                                        <div id="trace-safety-signals" class="signals-group">
+                                            <!-- Signals pills -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. ACTIVE CBT STATE (DYNAMIC) -->
+                            <div class="telemetry-card hidden" id="card-cbt-state">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-circle-nodes icon-purple"></i> 3. CBT State Machine</h3>
+                                    <span class="tech-tag tag-purple" id="trace-cbt-step">Step X</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="cbt-visualization">
+                                        <p class="cbt-info">CBT protocol active. Routine supervisor pathways bypassed to protect conversational state.</p>
+                                        <div class="cbt-step-diagram" id="cbt-steps-container">
+                                            <!-- Dynamic steps -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. SUPERVISOR ROUTING -->
+                            <div class="telemetry-card" id="card-supervisor">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-route icon-cyan"></i> 3. Supervisor Router</h3>
+                                    <span class="tech-tag tag-cyan" id="trace-supervisor-intent">...</span>
+                                </div>
+                                <div class="card-body">
+                                    <p class="supervisor-reasoning" id="trace-supervisor-reasoning">...</p>
+                                    <div class="routing-visual">
+                                        <span class="label">Routed Specialist Agent(s):</span>
+                                        <div id="trace-supervisor-routes" class="routes-group">
+                                            <!-- Dynamic agents -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 5. SYNTHESIS AND MERGE -->
+                            <div class="telemetry-card" id="card-synthesis">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-code-merge icon-cyan"></i> 4. Response Synthesis</h3>
+                                    <span class="tech-tag tag-cyan" id="trace-synthesis-length">0 chars</span>
+                                </div>
+                                <div class="card-body">
+                                    <p class="synthesis-details">Merged contributions from routed specialist agents into a unified, compassionate companion reply and appended the safety disclaimer block.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Custom Script -->
+    <script src="app.js"></script>
+</body>
+</html>
