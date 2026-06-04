@@ -9,6 +9,11 @@ if (!sessionId) {
     localStorage.setItem("hamsafar_session_id", sessionId);
 }
 
+// 3D Orb Interactive State
+let activeExercise = "breathing";
+let currentOrbColor = new THREE.Color(0x22d3ee);
+let targetOrbColor = new THREE.Color(0x22d3ee);
+
 // UI Elements
 const chatMessages = document.getElementById("chat-messages");
 const chatForm = document.getElementById("chat-form");
@@ -69,6 +74,13 @@ async function syncSessionProfile() {
         const response = await fetch(`${API_BASE}/api/session/${sessionId}`);
         if (response.ok) {
             const data = await response.json();
+            
+            // Sync active exercise state
+            if (data.active_protocol) {
+                activeExercise = data.active_protocol.name;
+            } else {
+                activeExercise = "breathing";
+            }
             
             // Sync Consent
             const consent = data.consent || { memory: true, mood_logging: false };
@@ -221,6 +233,20 @@ function updateTelemetry(trace) {
         return;
     }
     
+    // Update active exercise state for 3D orb behavior
+    const safety = trace.safety || {};
+    const tier = safety.tier || 3;
+    const routing = trace.routing || {};
+    const cbtOverride = routing.active_cbt_override || false;
+    
+    if (tier === 1 || tier === 2) {
+        activeExercise = "crisis";
+    } else if (cbtOverride) {
+        activeExercise = routing.cbt_protocol || "thought_record";
+    } else {
+        activeExercise = "breathing";
+    }
+    
     noTracePlaceholder.classList.add("hidden");
     traceDisplay.classList.remove("hidden");
     
@@ -366,25 +392,26 @@ function initThreeJSScene() {
 
     // Material 1: Solid Calming Glassmorphic Core
     const solidMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x0e172a,
-        transmission: 0.6,
-        opacity: 1,
+        color: 0x070b19,
+        emissive: 0x22d3ee,
+        emissiveIntensity: 0.5,
+        transmission: 0.4,
+        opacity: 0.9,
         transparent: true,
-        roughness: 0.15,
-        metalness: 0.1,
+        roughness: 0.1,
+        metalness: 0.8,
         clearcoat: 1.0,
-        clearcoatRoughness: 0.1,
-        ior: 1.3
+        ior: 1.5
     });
     solidOrb = new THREE.Mesh(geometry, solidMaterial);
     orbGroup.add(solidOrb);
 
-    // Material 2: Glowing Cyan Wireframe Outer Shell
+    // Material 2: Glowing Wireframe Outer Shell
     const wireMaterial = new THREE.MeshBasicMaterial({
         color: 0x22d3ee,
         wireframe: true,
         transparent: true,
-        opacity: 0.08
+        opacity: 0.25
     });
     wireOrb = new THREE.Mesh(geometry.clone(), wireMaterial);
     orbGroup.add(wireOrb);
@@ -423,26 +450,20 @@ function animate() {
 
     // 1. Morph Orb Vertices using waves (Organic deformation)
     if (solidOrb && originalPositions.length > 0) {
-        // Solid Orb Deformation
         const posAttr = solidOrb.geometry.attributes.position;
         const vertex = new THREE.Vector3();
         
         for (let i = 0; i < posAttr.count; i++) {
             vertex.copy(originalPositions[i]);
-            
-            // Mathematical wave mapping for organic organic floating blob
             const wave = Math.sin(vertex.x * 1.5 + time) * 
                          Math.cos(vertex.y * 1.5 + time) * 
                          Math.sin(vertex.z * 1.5 + time);
-                         
             const normal = vertex.clone().normalize();
-            vertex.add(normal.multiplyScalar(wave * 0.16)); // displacement depth
-            
+            vertex.add(normal.multiplyScalar(wave * 0.16));
             posAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
         }
         posAttr.needsUpdate = true;
 
-        // Wireframe Orb Deformation (slightly lagged/offset for depth)
         const wirePosAttr = wireOrb.geometry.attributes.position;
         for (let i = 0; i < wirePosAttr.count; i++) {
             vertex.copy(originalPositions[i]);
@@ -460,21 +481,107 @@ function animate() {
     orbGroup.rotation.y = time * 0.08;
     orbGroup.rotation.x = time * 0.05;
 
-    // 3. Guided Breathing Cycles (8-second loop: 4s expand, 4s contract)
-    const breathPeriod = time % 8.0;
-    let breathScale = 1.0;
+    // 3. Dynamic exercise styling (colors and breathing cycles)
+    let cycleTime = 8.0; // Default: 8s breathing
+    let colorHex = 0x22d3ee; // Default: Calming Cyan
     
-    if (breathPeriod < 4.0) {
-        // Expand (Inhale)
-        breathScale = 1.0 + (breathPeriod / 4.0) * 0.28;
-        if (breathingStatusText) breathingStatusText.textContent = "Inhale Slowly...";
+    if (activeExercise === "crisis") {
+        cycleTime = 16.0; // Box Breathing
+        colorHex = 0x10b981; // Calming Emerald Green
+    } else if (activeExercise === "thought_record") {
+        cycleTime = 10.0;
+        colorHex = 0x8b5cf6; // Focused Deep Purple
+    } else if (activeExercise === "worry_postponement") {
+        cycleTime = 12.0;
+        colorHex = 0xf59e0b; // Centering Amber/Orange
+    } else if (activeExercise === "activity_scheduling") {
+        cycleTime = 6.0;
+        colorHex = 0x0ea5e9; // Energizing Light Blue
+    }
+    
+    targetOrbColor.setHex(colorHex);
+    currentOrbColor.lerp(targetOrbColor, 0.05); // Smoothly transition colors
+
+    // Apply color to materials
+    if (solidOrb && solidOrb.material) {
+        solidOrb.material.emissive.copy(currentOrbColor);
+    }
+    if (wireOrb && wireOrb.material) {
+        wireOrb.material.color.copy(currentOrbColor);
+    }
+
+    // Calculate scaling and texts in sync
+    const breathPeriod = time % cycleTime;
+    let breathScale = 1.0;
+    let glowIntensity = 0.2;
+    
+    if (activeExercise === "crisis") {
+        // Box Breathing: 4s inhale, 4s hold, 4s exhale, 4s hold
+        if (breathPeriod < 4.0) {
+            // Inhale
+            const progress = breathPeriod / 4.0;
+            breathScale = 1.0 + progress * 0.35;
+            glowIntensity = 0.3 + progress * 0.5;
+            if (breathingStatusText) breathingStatusText.textContent = "Inhale (4s)...";
+        } else if (breathPeriod < 8.0) {
+            // Hold
+            breathScale = 1.35;
+            glowIntensity = 0.8;
+            if (breathingStatusText) breathingStatusText.textContent = "Hold Breath (4s)...";
+        } else if (breathPeriod < 12.0) {
+            // Exhale
+            const progress = (breathPeriod - 8.0) / 4.0;
+            breathScale = 1.35 - progress * 0.35;
+            glowIntensity = 0.8 - progress * 0.5;
+            if (breathingStatusText) breathingStatusText.textContent = "Exhale (4s)...";
+        } else {
+            // Rest/Hold
+            breathScale = 1.0;
+            glowIntensity = 0.3;
+            if (breathingStatusText) breathingStatusText.textContent = "Rest (4s)...";
+        }
     } else {
-        // Contract (Exhale)
-        breathScale = 1.28 - ((breathPeriod - 4.0) / 4.0) * 0.28;
-        if (breathingStatusText) breathingStatusText.textContent = "Exhale Gently...";
+        // Standard Inhale/Exhale split (50/50 of cycleTime)
+        const halfCycle = cycleTime / 2.0;
+        if (breathPeriod < halfCycle) {
+            const progress = breathPeriod / halfCycle;
+            breathScale = 1.0 + progress * 0.35;
+            glowIntensity = 0.3 + progress * 0.6;
+            
+            if (activeExercise === "thought_record") {
+                if (breathingStatusText) breathingStatusText.textContent = "Focus Inward...";
+            } else if (activeExercise === "worry_postponement") {
+                if (breathingStatusText) breathingStatusText.textContent = "Gather Calm...";
+            } else if (activeExercise === "activity_scheduling") {
+                if (breathingStatusText) breathingStatusText.textContent = "Absorb Energy...";
+            } else {
+                if (breathingStatusText) breathingStatusText.textContent = "Inhale Slowly...";
+            }
+        } else {
+            const progress = (breathPeriod - halfCycle) / halfCycle;
+            breathScale = 1.35 - progress * 0.35;
+            glowIntensity = 0.9 - progress * 0.6;
+            
+            if (activeExercise === "thought_record") {
+                if (breathingStatusText) breathingStatusText.textContent = "Release Tension...";
+            } else if (activeExercise === "worry_postponement") {
+                if (breathingStatusText) breathingStatusText.textContent = "Let Go of Worries...";
+            } else if (activeExercise === "activity_scheduling") {
+                if (breathingStatusText) breathingStatusText.textContent = "Activate Mind...";
+            } else {
+                if (breathingStatusText) breathingStatusText.textContent = "Exhale Gently...";
+            }
+        }
     }
 
     orbGroup.scale.set(breathScale, breathScale, breathScale);
+
+    if (solidOrb && solidOrb.material) {
+        solidOrb.material.emissiveIntensity = glowIntensity;
+    }
+    if (wireOrb && wireOrb.material) {
+        wireOrb.material.opacity = 0.12 + glowIntensity * 0.25;
+    }
 
     // 4. Render
     renderer.render(scene, camera);

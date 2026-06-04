@@ -35,7 +35,7 @@
     -webkit-font-smoothing: antialiased;
 }
 
-body {
+html, body {
     background-color: var(--bg-base);
     color: var(--text-primary);
     min-height: 100vh;
@@ -69,8 +69,7 @@ body {
 .app-container {
     max-width: 1440px;
     margin: 0 auto;
-    height: 100vh;
-    min-height: 750px;
+    min-height: 100vh;
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
@@ -159,7 +158,9 @@ body {
 }
 
 .panel-card {
-    height: 100%;
+    height: calc(100vh - 160px);
+    max-height: 680px;
+    min-height: 520px;
     display: flex;
     flex-direction: column;
 }
@@ -794,8 +795,14 @@ body {
     }
     .panel-card {
         height: 550px;
+        min-height: 0;
     }
     .telemetry-panel {
         margin-top: 1.5rem;
     }
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
 }
