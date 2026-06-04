@@ -39,7 +39,7 @@ body {
     background-color: var(--bg-base);
     color: var(--text-primary);
     min-height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;
     position: relative;
 }
 
@@ -70,6 +70,7 @@ body {
     max-width: 1440px;
     margin: 0 auto;
     height: 100vh;
+    min-height: 750px;
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
@@ -789,6 +790,7 @@ body {
     }
     .app-container {
         height: auto;
+        min-height: 0;
     }
     .panel-card {
         height: 550px;
