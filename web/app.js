@@ -255,8 +255,6 @@ function updateTelemetry(trace) {
     traceNormalizerOriginal.textContent = trace.input_message;
     traceNormalizerOutput.textContent = norm.normalized_text || trace.input_message;
     
-    const safety = trace.safety || {};
-    const tier = safety.tier || 3;
     traceSafetyTier.textContent = `Tier ${tier}`;
     traceSafetyReasoning.textContent = safety.reasoning || "Passed safety assessment.";
     
@@ -286,9 +284,6 @@ function updateTelemetry(trace) {
             traceSafetySignals.appendChild(span);
         });
     }
-    
-    const routing = trace.routing || {};
-    const cbtOverride = routing.active_cbt_override || false;
     
     if (cbtOverride) {
         cardCbtState.classList.remove("hidden");
