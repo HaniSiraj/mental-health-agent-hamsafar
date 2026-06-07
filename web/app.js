@@ -356,6 +356,7 @@ function initThreeJSScene() {
     const container = document.getElementById("three-container");
     if (!container) return;
 
+    try {
     // 1. Scene & Setup
     currentOrbColor = new THREE.Color(0x22d3ee);
     targetOrbColor = new THREE.Color(0x22d3ee);
@@ -433,6 +434,11 @@ function initThreeJSScene() {
 
     // Start Animate Loop
     animate();
+    console.log("Hamsafar 3D Breathing Orb initialized successfully.");
+
+    } catch (err) {
+        console.error("Failed to initialize 3D Breathing Orb:", err);
+    }
 }
 
 function onWindowResize() {

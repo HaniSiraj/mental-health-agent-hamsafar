@@ -17,6 +17,18 @@ load_dotenv()
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+REDIS_URL = os.getenv("REDIS_URL", None)  # Upstash provides rediss:// URLs
+
+# Sanitize REDIS_HOST: strip scheme prefixes and quotes that break the connection
+if REDIS_HOST:
+    REDIS_HOST = REDIS_HOST.strip('"').strip("'")
+    for prefix in ["https://", "http://", "rediss://", "redis://"]:
+        if REDIS_HOST.startswith(prefix):
+            REDIS_HOST = REDIS_HOST[len(prefix):]
+    REDIS_HOST = REDIS_HOST.rstrip("/")
+
+# Auto-detect if TLS is needed (Upstash always requires TLS on port 6380)
+REDIS_USE_TLS = "upstash.io" in (REDIS_HOST or "") or REDIS_PORT == 6380
 
 # Shared Redis pool
 redis_client = None
@@ -29,14 +41,22 @@ async def init_redis():
     """Initializes the asynchronous Redis connection pool."""
     global redis_client, _use_in_memory
     if redis_client is None and not _use_in_memory:
-        logger.info(f"Connecting to Redis at {REDIS_HOST}:{REDIS_PORT}...")
+        logger.info(f"Connecting to Redis at {REDIS_HOST}:{REDIS_PORT} (TLS={REDIS_USE_TLS})...")
         try:
-            redis_client = aioredis.Redis(
-                host=REDIS_HOST,
-                port=REDIS_PORT,
-                password=REDIS_PASSWORD,
-                decode_responses=True
-            )
+            # Support Upstash REDIS_URL (rediss://...) if provided
+            if REDIS_URL:
+                redis_client = aioredis.from_url(
+                    REDIS_URL,
+                    decode_responses=True
+                )
+            else:
+                redis_client = aioredis.Redis(
+                    host=REDIS_HOST,
+                    port=REDIS_PORT,
+                    password=REDIS_PASSWORD,
+                    decode_responses=True,
+                    ssl=REDIS_USE_TLS
+                )
             # Test ping
             await redis_client.ping()
             logger.info("Successfully connected to Redis.")
