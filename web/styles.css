@@ -243,6 +243,12 @@ body {
     animation: blink 2s infinite;
 }
 
+.profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 /* Consent Toggle */
 .toggle-switch {
     display: flex;

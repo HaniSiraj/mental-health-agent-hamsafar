@@ -21,6 +21,12 @@ const chatInput = document.getElementById("chat-input");
 const resetSessionBtn = document.getElementById("reset-session-btn");
 const sessionIdDisplay = document.getElementById("session-id-display");
 const consentMoodCheckbox = document.getElementById("consent-mood-checkbox");
+const toggleOrbCheckbox = document.getElementById("toggle-orb-checkbox");
+let orbEnabled = true;
+
+// Load initial orb preference
+const savedOrbPref = localStorage.getItem("hamsafar_orb_enabled");
+orbEnabled = savedOrbPref === null ? true : savedOrbPref === "true";
 
 // Telemetry Elements
 const noTracePlaceholder = document.getElementById("no-trace-placeholder");
@@ -56,6 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Initialize 3D Breathing Orb scene
     initThreeJSScene();
+    updateOrbVisibility();
     
     // Sync session from Redis
     await syncSessionProfile();
@@ -105,8 +112,27 @@ async function syncSessionProfile() {
 }
 
 // ----------------------------------------------------------------------------
-// CONSENT CONFIGS
+// CONSENT & ORB TOGGLE CONFIGS
 // ----------------------------------------------------------------------------
+
+if (toggleOrbCheckbox) {
+    toggleOrbCheckbox.checked = orbEnabled;
+    toggleOrbCheckbox.addEventListener("change", () => {
+        orbEnabled = toggleOrbCheckbox.checked;
+        localStorage.setItem("hamsafar_orb_enabled", orbEnabled);
+        updateOrbVisibility();
+    });
+}
+
+function updateOrbVisibility() {
+    const container = document.getElementById("three-container");
+    if (!container) return;
+    if (orbEnabled) {
+        container.classList.remove("hidden");
+    } else {
+        container.classList.add("hidden");
+    }
+}
 
 consentMoodCheckbox.addEventListener("change", async () => {
     try {
@@ -376,8 +402,8 @@ function initThreeJSScene() {
     // 4. Orb Group Creation
     orbGroup = new THREE.Group();
 
-    // Create many-segmented Sphere
-    const geometry = new THREE.SphereGeometry(1.6, 64, 64);
+    // Create many-segmented Sphere (made smaller: 1.0 instead of 1.6)
+    const geometry = new THREE.SphereGeometry(1.0, 64, 64);
     
     // Save original vertex positions for morphing offset
     const posAttr = geometry.attributes.position;
@@ -413,7 +439,7 @@ function initThreeJSScene() {
     wireOrb.scale.set(1.02, 1.02, 1.02); // Slightly larger than the core
     orbGroup.add(wireOrb);
 
-    // Material 3: Outer Glow Halo (large faint sphere for ambient glow effect)
+    // Material 3: Outer Glow Halo (made smaller: 1.8 instead of 2.8)
     const glowMaterial = new THREE.MeshBasicMaterial({
         color: 0x22d3ee,
         transparent: true,
@@ -421,7 +447,7 @@ function initThreeJSScene() {
         side: THREE.BackSide
     });
     const glowSphere = new THREE.Mesh(
-        new THREE.SphereGeometry(2.8, 32, 32),
+        new THREE.SphereGeometry(1.8, 32, 32),
         glowMaterial
     );
     orbGroup.add(glowSphere);
@@ -464,6 +490,9 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // Skip updates and rendering if disabled to conserve CPU/GPU
+    if (!orbEnabled) return;
 
     const time = clock.getElapsedTime();
 
@@ -539,18 +568,18 @@ function animate() {
         if (breathPeriod < 4.0) {
             // Inhale
             const progress = breathPeriod / 4.0;
-            breathScale = 1.0 + progress * 0.35;
+            breathScale = 1.0 + progress * 0.18;
             glowIntensity = 0.3 + progress * 0.5;
             if (breathingStatusText) breathingStatusText.textContent = "Inhale (4s)...";
         } else if (breathPeriod < 8.0) {
             // Hold
-            breathScale = 1.35;
+            breathScale = 1.18;
             glowIntensity = 0.8;
             if (breathingStatusText) breathingStatusText.textContent = "Hold Breath (4s)...";
         } else if (breathPeriod < 12.0) {
             // Exhale
             const progress = (breathPeriod - 8.0) / 4.0;
-            breathScale = 1.35 - progress * 0.35;
+            breathScale = 1.18 - progress * 0.18;
             glowIntensity = 0.8 - progress * 0.5;
             if (breathingStatusText) breathingStatusText.textContent = "Exhale (4s)...";
         } else {
@@ -564,7 +593,7 @@ function animate() {
         const halfCycle = cycleTime / 2.0;
         if (breathPeriod < halfCycle) {
             const progress = breathPeriod / halfCycle;
-            breathScale = 1.0 + progress * 0.35;
+            breathScale = 1.0 + progress * 0.18;
             glowIntensity = 0.3 + progress * 0.6;
             
             if (activeExercise === "thought_record") {
@@ -578,7 +607,7 @@ function animate() {
             }
         } else {
             const progress = (breathPeriod - halfCycle) / halfCycle;
-            breathScale = 1.35 - progress * 0.35;
+            breathScale = 1.18 - progress * 0.18;
             glowIntensity = 0.9 - progress * 0.6;
             
             if (activeExercise === "thought_record") {
