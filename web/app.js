@@ -365,7 +365,7 @@ function initThreeJSScene() {
 
     // 2. Camera
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.z = 6;
+    camera.position.z = 5;
 
     // 3. WebGL Renderer
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -389,18 +389,15 @@ function initThreeJSScene() {
         ));
     }
 
-    // Material 1: Solid Calming Glassmorphic Core
-    const solidMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x070b19,
+    // Material 1: Glowing Emissive Core (MeshStandardMaterial — r128 compatible)
+    const solidMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0a1628,
         emissive: 0x22d3ee,
-        emissiveIntensity: 0.5,
-        transmission: 0.4,
-        opacity: 0.9,
+        emissiveIntensity: 0.8,
+        opacity: 0.85,
         transparent: true,
-        roughness: 0.1,
-        metalness: 0.8,
-        clearcoat: 1.0,
-        ior: 1.5
+        roughness: 0.2,
+        metalness: 0.9,
     });
     solidOrb = new THREE.Mesh(geometry, solidMaterial);
     orbGroup.add(solidOrb);
@@ -410,24 +407,42 @@ function initThreeJSScene() {
         color: 0x22d3ee,
         wireframe: true,
         transparent: true,
-        opacity: 0.25
+        opacity: 0.35
     });
     wireOrb = new THREE.Mesh(geometry.clone(), wireMaterial);
+    wireOrb.scale.set(1.02, 1.02, 1.02); // Slightly larger than the core
     orbGroup.add(wireOrb);
+
+    // Material 3: Outer Glow Halo (large faint sphere for ambient glow effect)
+    const glowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x22d3ee,
+        transparent: true,
+        opacity: 0.06,
+        side: THREE.BackSide
+    });
+    const glowSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(2.8, 32, 32),
+        glowMaterial
+    );
+    orbGroup.add(glowSphere);
 
     scene.add(orbGroup);
 
-    // 5. Lighting (Cyan & Purple ambient backlights)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.08);
+    // 5. Lighting — boosted for visibility
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x22d3ee, 1.4); // Calming Cyan
-    dirLight1.position.set(5, 5, 2);
+    const dirLight1 = new THREE.DirectionalLight(0x22d3ee, 2.0); // Strong Cyan
+    dirLight1.position.set(5, 5, 3);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x8b5cf6, 1.1); // Deep Purple
-    dirLight2.position.set(-5, -5, 2);
+    const dirLight2 = new THREE.DirectionalLight(0x8b5cf6, 1.5); // Strong Purple
+    dirLight2.position.set(-5, -3, 2);
     scene.add(dirLight2);
+
+    const pointLight = new THREE.PointLight(0x22d3ee, 1.5, 15); // Close-range glow
+    pointLight.position.set(0, 0, 3);
+    scene.add(pointLight);
 
     // Resize Handler
     window.addEventListener("resize", onWindowResize);
