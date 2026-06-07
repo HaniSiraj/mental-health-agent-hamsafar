@@ -47,7 +47,9 @@ async def init_redis():
             if REDIS_URL:
                 redis_client = aioredis.from_url(
                     REDIS_URL,
-                    decode_responses=True
+                    decode_responses=True,
+                    socket_timeout=3.0,
+                    socket_connect_timeout=3.0
                 )
             else:
                 redis_client = aioredis.Redis(
@@ -55,7 +57,9 @@ async def init_redis():
                     port=REDIS_PORT,
                     password=REDIS_PASSWORD,
                     decode_responses=True,
-                    ssl=REDIS_USE_TLS
+                    ssl=REDIS_USE_TLS,
+                    socket_timeout=3.0,
+                    socket_connect_timeout=3.0
                 )
             # Test ping
             await redis_client.ping()
