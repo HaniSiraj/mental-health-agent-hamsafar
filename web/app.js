@@ -11,8 +11,8 @@ if (!sessionId) {
 
 // 3D Orb Interactive State
 let activeExercise = "breathing";
-let currentOrbColor = new THREE.Color(0x22d3ee);
-let targetOrbColor = new THREE.Color(0x22d3ee);
+let currentOrbColor = null;
+let targetOrbColor = null;
 
 // UI Elements
 const chatMessages = document.getElementById("chat-messages");
@@ -230,6 +230,7 @@ resetSessionBtn.addEventListener("click", async () => {
 
 function updateTelemetry(trace) {
     if (!trace || trace.status === "failed" || trace.error) {
+        console.error("Hamsafar Pipeline Error Trace:", trace);
         return;
     }
     
@@ -356,6 +357,8 @@ function initThreeJSScene() {
     if (!container) return;
 
     // 1. Scene & Setup
+    currentOrbColor = new THREE.Color(0x22d3ee);
+    targetOrbColor = new THREE.Color(0x22d3ee);
     scene = new THREE.Scene();
     clock = new THREE.Clock();
 

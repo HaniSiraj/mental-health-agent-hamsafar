@@ -35,12 +35,16 @@
     -webkit-font-smoothing: antialiased;
 }
 
-html, body {
+html {
     background-color: var(--bg-base);
+    overflow-y: auto;
+}
+
+body {
     color: var(--text-primary);
     min-height: 100vh;
-    overflow-y: auto;
     position: relative;
+    background-color: transparent;
 }
 
 /* Three.js Canvas backplane container */
