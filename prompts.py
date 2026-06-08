@@ -54,21 +54,39 @@ Analyze the message and classify it into one of these 5 Tiers:
 
 Tier 1: Active suicidal thoughts, suicide plan, active intent, or self-harm in progress.
         Imminent threat of harm to self or others.
-Tier 2: Recent (past 24h) self-harm; disclosed ongoing abuse or domestic violence;
-        severe emotional distress (severe panic, dissociation, hopelessness);
-        signals of acute psychosis, mania, or severe eating disorders;
-        substance overdose or withdrawal crisis.
-Tier 3: Moderate distress: anxiety, low mood, stress, relationship or family conflict,
-        academic/work burnout, grief, insomnia.
+        Examples: "I want to kill myself", "I have pills ready", "I am going to hurt myself tonight."
+
+Tier 2: Recent (past 24h) CONFIRMED self-harm; disclosed ongoing physical abuse or domestic violence;
+        EXPLICIT hopelessness with a stated desire to die (not idiomatic); acute psychosis or mania;
+        severe eating disorder crisis; substance overdose or withdrawal in progress.
+        Examples: "I cut myself last night", "my husband beats me daily", "I want to die and I have a plan."
+
+Tier 3: Moderate distress: anxiety, low mood, stress, relationship loss, heartbreak, grief,
+        family conflict, academic or work burnout, insomnia, loneliness, sadness after a breakup or loss.
+        This is the DEFAULT tier for emotional pain, sadness, and upset feelings.
+
 Tier 4: Psychoeducation query: general informational questions without personal distress cues
         (e.g., "What is CBT?", "How does anxiety work?", "Tips for better sleep").
+
 Tier 5: Out of scope: medical questions (medications/dosages), legal or financial requests,
         or completely unrelated general chitchat.
 
-CRITICAL RULES:
-1. When uncertain between two tiers, always select the HIGHER risk tier.
-2. False positives (over-escalation) are fully acceptable. False negatives are strictly unacceptable.
-3. Base your classification ONLY on the current user message. Do not assume or guess.
+CRITICAL CULTURAL AWARENESS — PAKISTANI/URDU IDIOMATIC EXPRESSIONS:
+Pakistani users frequently use emotionally intense figurative language that is NOT literal.
+You MUST classify these as Tier 3 (grief/heartbreak), NOT Tier 2:
+- "meri zindagi khatam hogyi / barbad hogyi uske janey se" = "my life feels ruined since they left" — idiomatic grief
+- "mera dil phat raha hai / toot gaya" = "my heart is breaking/broken" — heartbreak idiom
+- "mujhe nahi jeena" in the context of a breakup or loss = figurative despair, NOT literal suicidal intent
+- "sab khatam hogya", "meri duniya ujjar gayi" = "everything is over / my world is destroyed" — grief idioms
+These expressions signal emotional pain from loss or heartbreak and should receive empathetic counseling (Tier 3).
+Only escalate to Tier 1 or Tier 2 when the user explicitly states a METHOD, PLAN, or RECENT PHYSICAL ACT of self-harm.
+
+CLASSIFICATION RULES:
+1. Heartbreak, grief, relationship loss, and sadness are Tier 3 by DEFAULT.
+2. Upgrade to Tier 2 ONLY when: explicit physical harm stated, ongoing abuse disclosed, or a clear literal desire to die WITH a plan/method is mentioned.
+3. Upgrade to Tier 1 ONLY when: imminent, active suicidal or self-harm intent with a plan is stated.
+4. When uncertain between Tier 2 and Tier 3, ask: "Is this idiomatic grief or literal crisis?" If idiomatic — Tier 3.
+5. Base your classification ONLY on the current user message. Do not assume or guess.
 
 Return ONLY a JSON block with this structure:
 {
