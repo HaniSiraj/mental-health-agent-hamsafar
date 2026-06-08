@@ -30,6 +30,15 @@ if REDIS_HOST:
 # Auto-detect if TLS is needed (Upstash always requires TLS on port 6380)
 REDIS_USE_TLS = "upstash.io" in (REDIS_HOST or "") or REDIS_PORT == 6380
 
+# Auto-build a REDIS_URL if not explicitly provided
+# This ensures TLS is handled correctly by the URL-based client rather than raw socket SSL
+if not REDIS_URL and REDIS_HOST:
+    _scheme = "rediss" if REDIS_USE_TLS else "redis"
+    _auth = f":{REDIS_PASSWORD}@" if REDIS_PASSWORD else ""
+    _port = REDIS_PORT if REDIS_PORT else (6380 if REDIS_USE_TLS else 6379)
+    REDIS_URL = f"{_scheme}://{_auth}{REDIS_HOST}:{_port}"
+    logger.info(f"Auto-built REDIS_URL using scheme '{_scheme}' for host '{REDIS_HOST}'")
+
 # Shared Redis pool
 redis_client = None
 

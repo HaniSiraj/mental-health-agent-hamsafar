@@ -409,6 +409,34 @@ async def run_cognitive_pipeline(session_id: str, raw_message: str, session: dic
     # SAFEGUARD OVERRIDE: If mid-CBT exercise, supervisor is bypassed completely!
     if active_protocol:
         logger.info(f"User is mid-CBT protocol: '{active_protocol['name']}'. Bypassing supervisor.")
+        
+        # --- CANCEL / EXIT DETECTION ---
+        # Allow user to break out of a CBT exercise at any time by typing a cancel intent
+        # or by explicitly requesting a different exercise.
+        _lower = normalized_text.lower()
+        _cancel_phrases = ["stop", "cancel", "exit", "quit", "end exercise", "never mind", "nevermind", "leave it", "forget it"]
+        _exercise_triggers = ["thought record", "worry postponement", "behavioral activation", "activity scheduling"]
+        _wants_cancel = any(phrase in _lower for phrase in _cancel_phrases)
+        _wants_different_exercise = (
+            any(ex in _lower for ex in _exercise_triggers)
+            and not active_protocol["name"].replace("_", " ") in _lower
+        )
+        
+        if _wants_cancel or _wants_different_exercise:
+            cancelled_name = active_protocol["name"].replace("_", " ").title()
+            session["active_protocol"] = None
+            logger.info(f"User cancelled CBT protocol '{active_protocol['name']}'. Releasing to supervisor.")
+            cancel_msg = (
+                f"No problem at all — we've paused the **{cancelled_name}** exercise. "
+                "Take your time. Whenever you're ready, you can start a new exercise or just chat. "
+                "I'm here for you. 💙"
+            )
+            cognitive_trace["routing"] = {"action": "cbt_cancelled_by_user", "cancelled_protocol": active_protocol["name"]}
+            cognitive_trace["specialists"] = {}
+            cancel_msg += "\n\n---\n*Disclaimer: I am an AI psychoeducation prototype, not a clinic. For emergencies, contact Umang at 0311-7786264.*"
+            return cancel_msg, cognitive_trace, session
+        # --- END CANCEL DETECTION ---
+        
         cognitive_trace["routing"] = {
             "active_cbt_override": True,
             "cbt_protocol": active_protocol["name"],
