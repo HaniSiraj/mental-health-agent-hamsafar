@@ -159,28 +159,6 @@ npx serve web
 
 ---
 
-## 🚢 Production Deployment Strategy
-
-To deploy Hamsafar at scale, use the following production architecture:
-
-### 1. Backend (FastAPI Engine)
-*   **Platform:** Deploy the Dockerized backend to **Render**, **Railway**, **Fly.io**, or **AWS Elastic Container Service (ECS)**.
-*   **Auto-scaling:** Enable CPU-based auto-scaling. The application is stateless aside from external database calls, allowing horizontal scaling.
-
-### 2. Frontend (Premium Glassmorphic Dashboard)
-*   **Platform:** Deploy static files in the `web` folder to **Vercel**, **Netlify**, or **GitHub Pages**.
-*   **Performance:** Configure Global CDN caching. Set up proxy forwarding for `/api` requests to your hosted FastAPI URL.
-
-### 3. Databases (State & Context Store)
-*   **Redis Store:** Use **Upstash Redis** (Serverless, scales down to free tier) or **Render Managed Redis** to ensure production session persistence.
-*   **Pinecone Index:** Use Pinecone Serverless (already cloud-hosted) with metadata filtering configured on the `domain` key (`psychoed`, `cultural`, `resource`).
-
-### 4. Webhook Automation (n8n)
-*   **Self-Hosted:** Deploy a dedicated n8n instance on a small VPS (like DigitalOcean) using Docker. Ensure SQLite database persistency or link it to a PostgreSQL server.
-*   **Automation:** Set up a WhatsApp webhook using Twilio, connecting incoming client messages to n8n, which formats and forwards them to `POST https://your-backend.com/api/chat`.
-
----
-
 ## 🔌 API Endpoints Summary
 
 ### `POST /api/chat`
