@@ -1,0 +1,80 @@
+[
+  {
+    "id": "cbt-thought-record",
+    "domain": "cbt",
+    "name": "thought_record",
+    "title": "CBT Thought Record Exercise",
+    "steps": 6,
+    "description": "A 5-step structured exercise to identify, test, and reframe automatic negative thoughts.",
+    "states": {
+      "0": {
+        "prompt": "Let's work through this together. First, tell me about the specific situation that bothered you. What happened, where were you, and who was there?",
+        "field": "trigger"
+      },
+      "1": {
+        "prompt": "What specific emotions did you feel during that situation (e.g., anger, anxiety, sadness)? On a scale of 0 to 10, how intense was that feeling?",
+        "field": "emotion"
+      },
+      "2": {
+        "prompt": "What was the 'hot thought' or automatic negative thought that went through your mind? (e.g., 'I will fail', 'No one cares about me', 'I always ruin everything')",
+        "field": "hot_thought"
+      },
+      "3": {
+        "prompt": "Let's evaluate this thought objectively. What is the factual evidence that supports this thought? And more importantly, what evidence pushes back or contradicts it?",
+        "field": "evidence"
+      },
+      "4": {
+        "prompt": "Given both sides of the evidence, what is a more balanced, realistic thought? How can we reframe the situation?",
+        "field": "reframe"
+      },
+      "5": {
+        "prompt": "How intense (0 to 10) does the original emotion feel now? What is one small, practical next step you can take today?",
+        "field": "outcome"
+      }
+    }
+  },
+  {
+    "id": "cbt-worry-postponement",
+    "domain": "cbt",
+    "name": "worry_postponement",
+    "title": "Worry Postponement Protocol",
+    "steps": 2,
+    "description": "Helps manage runaway anxiety by scheduling a dedicated worry time later in the day.",
+    "states": {
+      "0": {
+        "prompt": "Worry postponement helps you take control of your attention. Right now, what is the main worry on your mind? Briefly state it.",
+        "field": "worry"
+      },
+      "1": {
+        "prompt": "Now, let's schedule a dedicated 15-minute 'Worry Time' for later today (e.g., 6:00 PM). During the day, if this worry pops up, write it down and say, 'I will think about this during my worry time.' Can you commit to a specific time and location for your worry session today?",
+        "field": "worry_schedule"
+      }
+    }
+  },
+  {
+    "id": "cbt-activity-scheduling",
+    "domain": "cbt",
+    "name": "activity_scheduling",
+    "title": "Behavioral Activation Exercise",
+    "steps": 4,
+    "description": "Designed for depression and fatigue. Schedules small, mood-boosting activities to build momentum.",
+    "states": {
+      "0": {
+        "prompt": "When mood is low, our energy drops, and we stop doing things that keep us connected. First, what are one or two simple activities you used to enjoy or that made you feel accomplished? (e.g., calling a friend, going for a walk, listening to music, cleaning your desk)",
+        "field": "activity_ideas"
+      },
+      "1": {
+        "prompt": "Excellent choice. Let's schedule just ONE of these activities. Exactly what day and time will you do it? Keep it highly specific (e.g., Saturday at 4 PM).",
+        "field": "schedule"
+      },
+      "2": {
+        "prompt": "On a scale of 0 to 10, how much effort or energy do you predict this will take? (Keeping it small is key to building momentum).",
+        "field": "predicted_difficulty"
+      },
+      "3": {
+        "prompt": "Awesome! I have logged this activity. Please try to complete it, and we can check in next time to see how it went. You are taking a wonderful step for your well-being.",
+        "field": "logged"
+      }
+    }
+  }
+]

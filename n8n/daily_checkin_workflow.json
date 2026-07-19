@@ -1,0 +1,129 @@
+{
+  "name": "Hamsafar Daily Check-In (PKT 9 AM)",
+  "nodes": [
+    {
+      "id": "cron-trigger",
+      "name": "Daily 9 AM PKT Cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 4 * * *"
+            }
+          ]
+        }
+      },
+      "notes": "Fires at 04:00 UTC = 09:00 PKT (UTC+5). Adjust if your n8n server is in a different timezone.",
+      "position": [100, 300]
+    },
+    {
+      "id": "fetch-active-sessions",
+      "name": "Fetch Active Session IDs (WhatsApp Users)",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.HAMSAFAR_BACKEND_URL}}/api/active-sessions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [
+            {"name": "X-Internal-Key", "value": "={{$env.HAMSAFAR_INTERNAL_API_KEY}}"}
+          ]
+        }
+      },
+      "notes": "Calls a protected endpoint that returns a list of phone-number session IDs for consented users who have been active in the last 7 days. See backend setup instructions.",
+      "position": [320, 300]
+    },
+    {
+      "id": "split-sessions",
+      "name": "Split Into Individual Sessions",
+      "type": "n8n-nodes-base.splitInBatches",
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [540, 300]
+    },
+    {
+      "id": "select-checkin-message",
+      "name": "Randomly Select Check-In Message",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "// Rotate through a bank of warm, culturally resonant check-in messages\n// Alternates between English and Roman Urdu for engagement\nconst messages = [\n  \"Assalam-o-Alaikum! 🌸 Aaj kaisa feel ho raha hai? Koi baat karna ho toh main hoon yahan. 💙\",\n  \"Good morning! ☀️ How are you feeling today? I'm here whenever you'd like to talk.\",\n  \"Aaj ka din kaisa ja raha hai? Bohot saari zindagi ka bojh akele uthana padta hai — aap akele nahi hain. 💙\",\n  \"Kya aaj aap apne aap ka khayal rakh rahe hain? 🌙 Thoda rest bhi zaroori hai.\",\n  \"Hey, just checking in 💙 How has your week been? Big or small — I'm here to listen.\",\n  \"Aaj ek chota sa sawaal: 1 se 10 tak, aaj aap khud ko kahan rakhenge? Seedha jawab dein — koi judgment nahi. 😊\",\n  \"Kaisi neend aayi raat ko? Your rest matters. 🌙 Share karein agar kuch baat karni ho.\"\n];\n\nconst sessionData = $input.first().json;\nconst randomIndex = Math.floor(Math.random() * messages.length);\n\nreturn [{\n  json: {\n    session_id: sessionData.session_id,\n    phone_number: sessionData.phone_number,\n    message: messages[randomIndex],\n    day_of_week: new Date().toLocaleDateString('en-US', { weekday: 'long' })\n  }\n}];"
+      },
+      "position": [760, 300]
+    },
+    {
+      "id": "send-checkin",
+      "name": "Send Daily Check-In via Twilio",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$env.TWILIO_ACCOUNT_SID}}/Messages.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twilioApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameter": [
+            {"name": "From", "value": "whatsapp:{{$env.TWILIO_WHATSAPP_NUMBER}}"},
+            {"name": "To", "value": "=whatsapp:+{{ $json.phone_number }}"},
+            {"name": "Body", "value": "={{ $json.message }}"}
+          ]
+        }
+      },
+      "position": [980, 300]
+    },
+    {
+      "id": "log-sent",
+      "name": "Log Check-In Sent",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconsole.log(`[Hamsafar Check-In] Sent to session ${$('Randomly Select Check-In Message').first().json.session_id} at ${new Date().toISOString()}`);\nreturn [{ json: { status: 'sent', timestamp: new Date().toISOString() } }];"
+      },
+      "position": [1200, 300]
+    }
+  ],
+  "connections": {
+    "Daily 9 AM PKT Cron": {
+      "main": [[{"node": "Fetch Active Session IDs (WhatsApp Users)", "type": "main", "index": 0}]]
+    },
+    "Fetch Active Session IDs (WhatsApp Users)": {
+      "main": [[{"node": "Split Into Individual Sessions", "type": "main", "index": 0}]]
+    },
+    "Split Into Individual Sessions": {
+      "main": [[{"node": "Randomly Select Check-In Message", "type": "main", "index": 0}]]
+    },
+    "Randomly Select Check-In Message": {
+      "main": [[{"node": "Send Daily Check-In via Twilio", "type": "main", "index": 0}]]
+    },
+    "Send Daily Check-In via Twilio": {
+      "main": [[{"node": "Log Check-In Sent", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "_env_vars_required": {
+    "HAMSAFAR_BACKEND_URL": "Your deployed FastAPI backend URL",
+    "HAMSAFAR_INTERNAL_API_KEY": "A secret key to protect the /api/active-sessions endpoint",
+    "TWILIO_ACCOUNT_SID": "Your Twilio Account SID",
+    "TWILIO_WHATSAPP_NUMBER": "Your Twilio WhatsApp sandbox number"
+  },
+  "_backend_endpoint_required": {
+    "endpoint": "GET /api/active-sessions",
+    "description": "Must return a list of {session_id, phone_number} for all WhatsApp sessions (those with session_id starting with 'wp_') where consent.memory=true and last activity was within 7 days.",
+    "auth": "Protected by X-Internal-Key header",
+    "example_response": "[{\"session_id\": \"wp_923001234567\", \"phone_number\": \"923001234567\"}]"
+  },
+  "_message_bank": [
+    "Assalam-o-Alaikum! Aaj kaisa feel ho raha hai?",
+    "Good morning! How are you feeling today?",
+    "Aaj ka din kaisa ja raha hai? Aap akele nahi hain.",
+    "Kya aaj aap apne aap ka khayal rakh rahe hain?",
+    "Hey, just checking in. How has your week been?",
+    "Aaj ek chota sa sawaal: 1 se 10 tak, aap khud ko kahan rakhenge?",
+    "Kaisi neend aayi raat ko? Your rest matters."
+  ]
+}

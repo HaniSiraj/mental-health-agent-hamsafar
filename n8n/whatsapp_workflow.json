@@ -1,0 +1,221 @@
+{
+  "name": "Hamsafar WhatsApp Integration",
+  "nodes": [
+    {
+      "id": "whatsapp-webhook",
+      "name": "Twilio WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-inbound",
+        "responseMode": "lastNode",
+        "responseData": "allEntries"
+      },
+      "position": [100, 300]
+    },
+    {
+      "id": "extract-fields",
+      "name": "Extract Message & Phone Number",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "// Twilio sends form-encoded data\nconst body = $input.first().json;\n\n// Extract the incoming WhatsApp message body and sender\nconst rawMessage = body.Body || '';\nconst fromNumber = body.From || '';\n\n// Normalize the phone number to create a consistent session ID\n// Format: 'whatsapp:+923001234567' -> 'wp_923001234567'\nconst sessionId = 'wp_' + fromNumber.replace('whatsapp:', '').replace('+', '').replace(/\\s/g, '');\n\nconst isFirstMessage = body.NumMedia === '0' && rawMessage.length > 0;\n\nreturn [{\n  json: {\n    session_id: sessionId,\n    message: rawMessage,\n    from_number: fromNumber,\n    is_first_message: isFirstMessage\n  }\n}];"
+      },
+      "position": [320, 300]
+    },
+    {
+      "id": "check-onboarding",
+      "name": "Check If Onboarding Needed",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.HAMSAFAR_BACKEND_URL}}/api/session/{{ $json.session_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        }
+      },
+      "position": [540, 300]
+    },
+    {
+      "id": "route-onboarding",
+      "name": "Route: New User or Returning?",
+      "type": "n8n-nodes-base.switch",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.turns.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [760, 300]
+    },
+    {
+      "id": "onboarding-message",
+      "name": "Send Onboarding Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$env.TWILIO_ACCOUNT_SID}}/Messages.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twilioApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameter": [
+            {"name": "From", "value": "whatsapp:{{$env.TWILIO_WHATSAPP_NUMBER}}"},
+            {"name": "To", "value": "={{ $('Extract Message & Phone Number').first().json.from_number }}"},
+            {"name": "Body", "value": "Assalam-o-Alaikum! 🌙 Main Hamsafar hoon — aapka AI mental health companion.\n\n*Yeh kya hai?*\nMain aapki emotional wellbeing mein madad karta hoon — anxiety, stress, family pressure, burnout — English ya Roman Urdu mein baat kar saktay hain.\n\n⚠️ *Important:* Main ek AI prototype hoon, ek therapist nahi. Emergency mein Umang Pakistan se rabta karein: *0311-7786264* (Free, 24/7)\n\n*Kya aap consent dete hain ke main apni conversations yaad rakhun?*\nJawab dein: *Haan* ya *Nahi*"}
+          ]
+        }
+      },
+      "position": [980, 180]
+    },
+    {
+      "id": "set-consent",
+      "name": "Set Consent Based on Reply",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "const msg = $input.first().json.message.toLowerCase().trim();\nconst sessionId = $input.first().json.session_id;\n\n// Detect consent affirmation in Roman Urdu or English\nconst affirmative = ['haan', 'han', 'yes', 'y', 'ok', 'okay', 'theek hai', 'bilkul', 'zaroor'];\nconst isConsent = affirmative.some(w => msg.includes(w));\n\nreturn [{\n  json: {\n    session_id: sessionId,\n    memory: true,\n    mood_logging: isConsent\n  }\n}];"
+      },
+      "position": [1200, 180]
+    },
+    {
+      "id": "post-consent",
+      "name": "POST Consent to Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.HAMSAFAR_BACKEND_URL}}/api/consent/{{ $json.session_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameter": [
+            {"name": "memory", "value": "={{ $json.memory }}"},
+            {"name": "mood_logging", "value": "={{ $json.mood_logging }}"}
+          ]
+        }
+      },
+      "position": [1420, 180]
+    },
+    {
+      "id": "chat-api",
+      "name": "POST to Hamsafar Chat API",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.HAMSAFAR_BACKEND_URL}}/api/chat",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"session_id\": \"{{ $('Extract Message & Phone Number').first().json.session_id }}\",\n  \"message\": \"{{ $('Extract Message & Phone Number').first().json.message }}\"\n}"
+      },
+      "position": [980, 420]
+    },
+    {
+      "id": "format-reply",
+      "name": "Format WhatsApp Reply",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Clean the reply for WhatsApp formatting\n// WhatsApp supports *bold* and _italic_ but not HTML\nlet reply = data.reply || 'Koi reply nahi mila. Dobara try karein.';\n\n// Remove HTML tags if any slipped through\nreply = reply.replace(/<[^>]*>/g, '');\n\n// Replace markdown bold with WhatsApp bold\nreply = reply.replace(/\\*\\*(.*?)\\*\\*/g, '*$1*');\n\n// Truncate if too long (WhatsApp limit ~1600 chars)\nif (reply.length > 1500) {\n  reply = reply.substring(0, 1497) + '...';\n}\n\nreturn [{ json: { reply } }];"
+      },
+      "position": [1200, 420]
+    },
+    {
+      "id": "send-whatsapp-reply",
+      "name": "Send WhatsApp Reply via Twilio",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$env.TWILIO_ACCOUNT_SID}}/Messages.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twilioApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameter": [
+            {"name": "From", "value": "whatsapp:{{$env.TWILIO_WHATSAPP_NUMBER}}"},
+            {"name": "To", "value": "={{ $('Extract Message & Phone Number').first().json.from_number }}"},
+            {"name": "Body", "value": "={{ $json.reply }}"}
+          ]
+        }
+      },
+      "position": [1420, 420]
+    }
+  ],
+  "connections": {
+    "Twilio WhatsApp Webhook": {
+      "main": [[{"node": "Extract Message & Phone Number", "type": "main", "index": 0}]]
+    },
+    "Extract Message & Phone Number": {
+      "main": [[{"node": "Check If Onboarding Needed", "type": "main", "index": 0}]]
+    },
+    "Check If Onboarding Needed": {
+      "main": [[{"node": "Route: New User or Returning?", "type": "main", "index": 0}]]
+    },
+    "Route: New User or Returning?": {
+      "main": [
+        [{"node": "Send Onboarding Message", "type": "main", "index": 0}],
+        [{"node": "POST to Hamsafar Chat API", "type": "main", "index": 0}]
+      ]
+    },
+    "Send Onboarding Message": {
+      "main": [[{"node": "Set Consent Based on Reply", "type": "main", "index": 0}]]
+    },
+    "Set Consent Based on Reply": {
+      "main": [[{"node": "POST Consent to Backend", "type": "main", "index": 0}]]
+    },
+    "POST to Hamsafar Chat API": {
+      "main": [[{"node": "Format WhatsApp Reply", "type": "main", "index": 0}]]
+    },
+    "Format WhatsApp Reply": {
+      "main": [[{"node": "Send WhatsApp Reply via Twilio", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateId": "hamsafar-whatsapp-v1",
+    "description": "Hamsafar WhatsApp Integration via Twilio Sandbox. Routes incoming WhatsApp messages to the FastAPI backend and sends replies back."
+  },
+  "_env_vars_required": {
+    "HAMSAFAR_BACKEND_URL": "Your deployed FastAPI backend URL, e.g. https://your-app.railway.app",
+    "TWILIO_ACCOUNT_SID": "Your Twilio Account SID from console.twilio.com",
+    "TWILIO_AUTH_TOKEN": "Your Twilio Auth Token (set as n8n credential)",
+    "TWILIO_WHATSAPP_NUMBER": "Your Twilio Sandbox WhatsApp number e.g. +14155238886"
+  },
+  "_setup_instructions": [
+    "1. Import this JSON into n8n: Workflows > Import from File",
+    "2. Set up Twilio credentials in n8n: Settings > Credentials > Add Credential > Twilio API",
+    "3. Set environment variables HAMSAFAR_BACKEND_URL and TWILIO_WHATSAPP_NUMBER in n8n",
+    "4. Activate the workflow and get the webhook URL from the Webhook node",
+    "5. In Twilio Console > Messaging > Try it Out > Send a WhatsApp message, set the webhook URL as: <your-n8n-url>/webhook/whatsapp-inbound",
+    "6. Test by sending 'join <sandbox-keyword>' to your Twilio Sandbox number on WhatsApp, then send any message"
+  ]
+}

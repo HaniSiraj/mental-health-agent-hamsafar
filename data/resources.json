@@ -1,0 +1,67 @@
+[
+  {
+    "id": "umang",
+    "name": "Umang Pakistan",
+    "type": "crisis_line",
+    "modes": ["phone", "whatsapp"],
+    "contact": "0311-7786264",
+    "hours": "24/7",
+    "languages": ["ur", "en"],
+    "cost": "free",
+    "description": "A dedicated, clinical mental health helpline offering free tele-counseling with clinical psychologists for suicide prevention and acute emotional distress.",
+    "verified_url": "https://www.umangpak.org",
+    "verified_on": "2026-05-30"
+  },
+  {
+    "id": "taskeen",
+    "name": "Taskeen Health Initiative",
+    "type": "peer_support",
+    "modes": ["phone", "web"],
+    "contact": "0316-8275336",
+    "hours": "11:00 AM - 11:00 PM (Mon-Sat)",
+    "languages": ["ur", "en"],
+    "cost": "free",
+    "description": "An emotional support helpline offering mental health screening, active listening, and facilitated referrals to qualified psychiatrists/psychologists.",
+    "verified_url": "https://taskeen.org",
+    "verified_on": "2026-05-30"
+  },
+  {
+    "id": "karwan",
+    "name": "Karwan-e-Hayat",
+    "type": "psychiatric_clinic",
+    "modes": ["phone", "in_person"],
+    "contact": "021-32202008",
+    "hours": "9:00 AM - 5:00 PM (Mon-Fri)",
+    "languages": ["ur", "en"],
+    "cost": "low_cost",
+    "description": "A prominent non-profit psychiatric care hospital in Karachi offering clinical diagnosis, pharmaceutical treatment, counseling, and inpatient rehabilitation.",
+    "verified_url": "https://keh.org.pk",
+    "verified_on": "2026-05-30"
+  },
+  {
+    "id": "rozan",
+    "name": "Rozan Helpline",
+    "type": "crisis_line",
+    "modes": ["phone"],
+    "contact": "0800-22444",
+    "hours": "10:00 AM - 6:00 PM (Mon-Sat)",
+    "languages": ["ur", "en"],
+    "cost": "free",
+    "description": "A toll-free helpline providing psychological support, counseling, and legal-medical referral services for women, youth, and children experiencing violence or distress.",
+    "verified_url": "https://rozan.org",
+    "verified_on": "2026-05-30"
+  },
+  {
+    "id": "pamh",
+    "name": "Pakistan Association for Mental Health",
+    "type": "outpatient_care",
+    "modes": ["phone", "in_person"],
+    "contact": "021-35384152",
+    "hours": "10:00 AM - 4:00 PM (Mon-Sat)",
+    "languages": ["ur", "en"],
+    "cost": "low_cost",
+    "description": "A established psychiatric care clinic in Karachi offering subsidized clinical diagnostics, outpatient psychiatry sessions, and family counseling.",
+    "verified_url": "https://pamh.org.pk",
+    "verified_on": "2026-05-30"
+  }
+]
