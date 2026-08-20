@@ -1,150 +1,415 @@
 {
-  "name": "Hamsafar Multi-Agent Cognitive Gateway",
+  "name": "Hamsafar — WhatsApp Complete + Daily Check-in",
+  "active": true,
   "nodes": [
+
+    // =========================================================================
+    // BRANCH A: WHATSAPP INBOUND PIPELINE
+    // =========================================================================
+
     {
+      "id": "webhook-inbound",
+      "name": "WhatsApp Inbound (Twilio Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300],
       "parameters": {
         "httpMethod": "POST",
         "path": "hamsafar-chat",
+        "responseMode": "responseNode",
         "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
-      "position": [
-        100,
-        300
-      ],
-      "id": "webhook-inbound",
-      "name": "Twilio / Web UI Webhook"
+      }
     },
+
     {
+      "id": "extract-twilio-fields",
+      "name": "Extract Twilio Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 300],
       "parameters": {
-        "method": "POST",
-        "url": "=http://backend:8000/api/chat",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"session_id\": \"{{ $json.body.From || $json.body.session_id || 'default_user' }}\",\n  \"message\": \"{{ $json.body.Body || $json.body.message }}\"\n}",
-        "options": {}
-      },
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\n// Twilio sends form-encoded body — fields: From, Body\nconst fromRaw = body.From || body.from || '';\nconst messageText = body.Body || body.message || body.body || '';\n\n// Normalize phone: 'whatsapp:+923001234567' → 'wp_923001234567'\nconst sessionId = 'wp_' + fromRaw.replace('whatsapp:', '').replace('+', '').replace(/\\s/g, '');\nconst phoneNumber = fromRaw; // Keep full 'whatsapp:+923...' for sending back\n\nif (!messageText) throw new Error('Empty message received — ignored.');\n\nreturn [{ json: {\n  session_id: sessionId,\n  phone_number: phoneNumber,\n  raw_message: messageText\n}}];"
+      }
+    },
+
+    {
+      "id": "get-session-state",
+      "name": "GET Session State",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        320,
-        300
-      ],
-      "id": "http-cognitive-backend",
-      "name": "FastAPI Cognitive Brain"
-    },
-    {
+      "position": [540, 300],
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "type": "string"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.body.From }}",
-              "operator": "isNotEmpty",
-              "rightValue": ""
-            }
-          ],
-          "combinator": "and"
+        "method": "GET",
+        "url": "={{ $env.HAMSAFAR_BACKEND_URL }}/api/session/{{ $json.session_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [{ "name": "Content-Type", "value": "application/json" }]
         },
-        "options": {}
-      },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+
+    {
+      "id": "analyze-user-state",
+      "name": "Analyze User State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300],
+      "parameters": {
+        "jsCode": "// Merge upstream data\nconst twilio = $('Extract Twilio Fields').first().json;\nconst session = $input.first().json;\n\nconst turns = session.turns || [];\nconst message = twilio.raw_message.toLowerCase().trim();\n\n// Detect if brand new user (no turns yet)\nconst isNewUser = turns.length === 0;\n\n// Detect consent reply: user replies haan/yes/nahi/no within first 3 turns\nconst affirmWords = ['haan', 'han', 'yes', 'y', 'ok', 'okay', 'theek hai', 'bilkul', 'zaroor'];\nconst denyWords  = ['nahi', 'nay', 'no', 'n', 'nope', 'mat', 'nahin'];\nconst isConsentReply = turns.length <= 3 && (affirmWords.some(w => message.includes(w)) || denyWords.some(w => message.includes(w)));\nconst consentMoodLogging = isConsentReply && affirmWords.some(w => message.includes(w));\n\nreturn [{ json: {\n  session_id: twilio.session_id,\n  phone_number: twilio.phone_number,\n  raw_message: twilio.raw_message,\n  turn_count: turns.length,\n  is_new_user: isNewUser,\n  is_consent_reply: isConsentReply && !isNewUser,\n  consent_mood_logging: consentMoodLogging\n}}];"
+      }
+    },
+
+    {
+      "id": "check-new-user",
+      "name": "Is New User?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [
-        540,
-        300
-      ],
-      "id": "if-whatsapp-channel",
-      "name": "Is WhatsApp Traffic?"
+      "position": [980, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_new_user }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ]
+        },
+        "options": {}
+      }
     },
+
     {
+      "id": "send-onboarding-message",
+      "name": "Send Onboarding Message",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1200, 160],
       "parameters": {
         "resource": "message",
         "operation": "create",
-        "from": "whatsapp:+14155238886",
-        "to": "={{ $('Twilio / Web UI Webhook').item.json.body.From }}",
+        "from": "whatsapp:{{ $env.TWILIO_WHATSAPP_NUMBER }}",
+        "to": "={{ $json.phone_number }}",
         "messageType": "whatsapp",
-        "text": "={{ $json.body.reply }}"
+        "text": "Assalam-o-Alaikum! 🌙 Main *Hamsafar* hoon — aapka AI mental wellbeing companion.\n\n*Main kya hoon?*\nMain aapki emotional wellbeing mein madad karta hoon — anxiety, stress, family pressure, burnout — English ya Roman Urdu mein baat kar saktay hain.\n\n⚠️ *Zaroori baat:* Main ek AI prototype hoon, trained therapist nahi. Kisi emergency mein Umang Pakistan se rabta karein: *0311-7786264* (Free, 24/7)\n\n*Kya aap consent dete hain ke main mood tracking enable karun?*\nJawab dein: *Haan* ya *Nahi* 💙"
       },
+      "credentials": { "twilioApi": { "id": "twilio-creds", "name": "Twilio API" } }
+    },
+
+    {
+      "id": "set-default-consent",
+      "name": "Set Default Consent (New User)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1420, 160],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.HAMSAFAR_BACKEND_URL }}/api/consent/{{ $('Analyze User State').first().json.session_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\"memory\": true, \"mood_logging\": false}"
+      }
+    },
+
+    {
+      "id": "check-consent-reply",
+      "name": "Is Consent Reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, 400],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.is_consent_reply }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+
+    {
+      "id": "update-consent-choice",
+      "name": "Update Consent (User Choice)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1420, 340],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.HAMSAFAR_BACKEND_URL }}/api/consent/{{ $json.session_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\"memory\": true, \"mood_logging\": {{ $json.consent_mood_logging }}}"
+      }
+    },
+
+    {
+      "id": "merge-all-paths",
+      "name": "Merge All Paths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1640, 300],
+      "parameters": {
+        "mode": "passThrough",
+        "output": "first"
+      }
+    },
+
+    {
+      "id": "post-to-chat-api",
+      "name": "POST to Hamsafar Chat API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1860, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.HAMSAFAR_BACKEND_URL }}/api/chat",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"session_id\": \"{{ $('Analyze User State').first().json.session_id }}\",\n  \"message\": \"{{ $('Analyze User State').first().json.raw_message }}\"\n}"
+      }
+    },
+
+    {
+      "id": "format-whatsapp-reply",
+      "name": "Format WhatsApp Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2080, 300],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Get the reply text\nlet reply = data.reply || 'Kuch technical issue hua. Dobara try karein. 💙';\n\n// Strip HTML tags if any\nreply = reply.replace(/<[^>]*>/g, '');\n\n// Convert markdown bold to WhatsApp bold\nreply = reply.replace(/\\*\\*(.*?)\\*\\*/g, '*$1*');\n\n// Strip the disclaimer separator line for cleaner WhatsApp read\nif (reply.includes('---')) {\n  const parts = reply.split('---');\n  reply = parts[0].trim() + '\\n\\n_' + parts[1].replace(/\\*/g, '').trim() + '_';\n}\n\n// WhatsApp character limit ~1600\nif (reply.length > 1500) {\n  reply = reply.substring(0, 1497) + '...';\n}\n\nreturn [{ json: { \n  reply,\n  phone_number: $('Analyze User State').first().json.phone_number\n}}];"
+      }
+    },
+
+    {
+      "id": "send-whatsapp-reply",
+      "name": "Send WhatsApp Reply",
       "type": "n8n-nodes-base.twilio",
       "typeVersion": 1,
-      "position": [
-        780,
-        200
-      ],
-      "id": "twilio-send-whatsapp",
-      "name": "Send WhatsApp Reply",
-      "credentials": {
-        "twilioApi": {
-          "id": "twilio-credential-placeholder"
+      "position": [2300, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "create",
+        "from": "whatsapp:{{ $env.TWILIO_WHATSAPP_NUMBER }}",
+        "to": "={{ $json.phone_number }}",
+        "messageType": "whatsapp",
+        "text": "={{ $json.reply }}"
+      },
+      "credentials": { "twilioApi": { "id": "twilio-creds", "name": "Twilio API" } }
+    },
+
+    {
+      "id": "respond-to-twilio",
+      "name": "Respond 200 OK to Twilio",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2520, 300],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+        "options": {
+          "responseHeaders": {
+            "entries": [{ "name": "Content-Type", "value": "text/xml" }]
+          }
         }
       }
     },
+
+    // =========================================================================
+    // BRANCH B: DAILY CHECK-IN (9 AM PKT = 4 AM UTC)
+    // =========================================================================
+
     {
-      "parameters": {
-        "respondWith": "allEntryItems",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
+      "id": "daily-checkin-trigger",
+      "name": "Daily 9AM PKT Check-in",
+      "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [
-        780,
-        400
-      ],
-      "id": "respond-web-ui",
-      "name": "Respond to Web UI"
+      "position": [100, 700],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 4 * * *" }]
+        }
+      }
+    },
+
+    {
+      "id": "fetch-active-sessions",
+      "name": "Fetch Active WhatsApp Sessions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [320, 700],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.HAMSAFAR_BACKEND_URL }}/api/active-sessions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [
+            { "name": "x-internal-key", "value": "={{ $env.HAMSAFAR_INTERNAL_API_KEY }}" }
+          ]
+        },
+        "options": { "response": { "response": { "responseFormat": "json" } } }
+      }
+    },
+
+    {
+      "id": "split-into-sessions",
+      "name": "Split Per User",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [540, 700],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+
+    {
+      "id": "pick-checkin-message",
+      "name": "Pick Random Check-in Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 700],
+      "parameters": {
+        "jsCode": "// Bank of 10 warm bilingual check-in messages\n// Alternates between Roman Urdu and English for variety\nconst messages = [\n  'Assalam-o-Alaikum! 🌸 Aaj kaisa feel ho raha hai? Koi baat karni ho toh main yahan hoon. 💙',\n  'Good morning! ☀️ How are you feeling today? I\\'m here whenever you\\'d like to talk.',\n  'Aaj ka din kaisa shuru hua? Bohot saari zindagi ka bojh akele uthana padta hai — yaad rakho ke tum akele nahi ho. 💙',\n  'Hey, just checking in 💙 How has your week been? Big or small — I\\'m here to listen.',\n  'Kya aaj aap apne aap ka khayal rakh rahe hain? 🌙 Thoda rest bhi zaroori hai.',\n  'Aaj ek chota sa sawaal: 1 se 10 tak, aap khud ko kahan rakhenge? Seedha jawab dein — koi judgment nahi 😊',\n  'Kaisi neend aayi? Your rest matters. 🌙 Kuch share karna ho toh bata dena.',\n  'Reminder: aap jo feel kar rahe hain, woh valid hai. Chahte ho kuch baat karein? 💙',\n  'Sometimes the bravest thing is just showing up. How are you holding up today? 🌿',\n  'Aaj ka ek chota goal: apne aap ke liye kuch acha karo — chahe woh 5 minute ki neend ho ya ek glass paani. 💙'\n];\n\nconst session = $input.first().json;\nconst idx = Math.floor(Math.random() * messages.length);\n\nreturn [{ json: {\n  session_id: session.session_id,\n  phone_number: 'whatsapp:+' + session.phone_number,\n  checkin_message: messages[idx]\n}}];"
+      }
+    },
+
+    {
+      "id": "send-checkin-message",
+      "name": "Send Daily Check-in",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [980, 700],
+      "parameters": {
+        "resource": "message",
+        "operation": "create",
+        "from": "whatsapp:{{ $env.TWILIO_WHATSAPP_NUMBER }}",
+        "to": "={{ $json.phone_number }}",
+        "messageType": "whatsapp",
+        "text": "={{ $json.checkin_message }}"
+      },
+      "credentials": { "twilioApi": { "id": "twilio-creds", "name": "Twilio API" } }
     }
+
   ],
+
+  // =========================================================================
+  // CONNECTIONS
+  // =========================================================================
+
   "connections": {
-    "Twilio / Web UI Webhook": {
+
+    "WhatsApp Inbound (Twilio Webhook)": {
+      "main": [[{ "node": "Extract Twilio Fields", "type": "main", "index": 0 }]]
+    },
+
+    "Extract Twilio Fields": {
+      "main": [[{ "node": "GET Session State", "type": "main", "index": 0 }]]
+    },
+
+    "GET Session State": {
+      "main": [[{ "node": "Analyze User State", "type": "main", "index": 0 }]]
+    },
+
+    "Analyze User State": {
+      "main": [[{ "node": "Is New User?", "type": "main", "index": 0 }]]
+    },
+
+    "Is New User?": {
       "main": [
-        [
-          {
-            "node": "FastAPI Cognitive Brain",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Send Onboarding Message", "type": "main", "index": 0 }],
+        [{ "node": "Is Consent Reply?", "type": "main", "index": 0 }]
       ]
     },
-    "FastAPI Cognitive Brain": {
+
+    "Send Onboarding Message": {
+      "main": [[{ "node": "Set Default Consent (New User)", "type": "main", "index": 0 }]]
+    },
+
+    "Set Default Consent (New User)": {
+      "main": [[{ "node": "Merge All Paths", "type": "main", "index": 0 }]]
+    },
+
+    "Is Consent Reply?": {
       "main": [
-        [
-          {
-            "node": "Is WhatsApp Traffic?",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update Consent (User Choice)", "type": "main", "index": 0 }],
+        [{ "node": "Merge All Paths", "type": "main", "index": 1 }]
       ]
     },
-    "Is WhatsApp Traffic?": {
-      "main": [
-        [
-          {
-            "node": "Send WhatsApp Reply",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Respond to Web UI",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
+
+    "Update Consent (User Choice)": {
+      "main": [[{ "node": "Merge All Paths", "type": "main", "index": 2 }]]
+    },
+
+    "Merge All Paths": {
+      "main": [[{ "node": "POST to Hamsafar Chat API", "type": "main", "index": 0 }]]
+    },
+
+    "POST to Hamsafar Chat API": {
+      "main": [[{ "node": "Format WhatsApp Reply", "type": "main", "index": 0 }]]
+    },
+
+    "Format WhatsApp Reply": {
+      "main": [[{ "node": "Send WhatsApp Reply", "type": "main", "index": 0 }]]
+    },
+
+    "Send WhatsApp Reply": {
+      "main": [[{ "node": "Respond 200 OK to Twilio", "type": "main", "index": 0 }]]
+    },
+
+    "Daily 9AM PKT Check-in": {
+      "main": [[{ "node": "Fetch Active WhatsApp Sessions", "type": "main", "index": 0 }]]
+    },
+
+    "Fetch Active WhatsApp Sessions": {
+      "main": [[{ "node": "Split Per User", "type": "main", "index": 0 }]]
+    },
+
+    "Split Per User": {
+      "main": [[{ "node": "Pick Random Check-in Message", "type": "main", "index": 0 }]]
+    },
+
+    "Pick Random Check-in Message": {
+      "main": [[{ "node": "Send Daily Check-in", "type": "main", "index": 0 }]]
     }
+
   },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1"
+
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+
+  "_setup_instructions": {
+    "step_1": "Import this file into n8n: Workflows > Import from File",
+    "step_2": "Add Twilio credential: Settings > Credentials > Add > Twilio API (Account SID + Auth Token)",
+    "step_3": "Name the Twilio credential exactly: 'Twilio API'",
+    "step_4": "Set n8n environment variables: HAMSAFAR_BACKEND_URL, TWILIO_WHATSAPP_NUMBER, HAMSAFAR_INTERNAL_API_KEY",
+    "step_5": "Activate the workflow (toggle ON)",
+    "step_6": "Copy the Webhook URL from the 'WhatsApp Inbound' node",
+    "step_7": "In Twilio Console > Messaging > WhatsApp Sandbox settings, set the 'When a message comes in' webhook to that URL",
+    "step_8": "Test: Send 'join <sandbox-keyword>' to your Twilio sandbox number on WhatsApp, then send any message"
   },
-  "id": "hamsafar-workflow-export"
+
+  "_env_vars": {
+    "HAMSAFAR_BACKEND_URL": "e.g. https://your-app.onrender.com",
+    "TWILIO_WHATSAPP_NUMBER": "e.g. +14155238886",
+    "HAMSAFAR_INTERNAL_API_KEY": "hamsafar_internal_9f3a2c7b4e1d8a6f (must match .env)"
+  }
 }
