@@ -1,0 +1,46 @@
+# fly.toml — Fly.io deployment config for Hamsafar
+# Generated for mental-health-agent-hamsafar
+
+app = "mental-health-agent-hamsafar"
+primary_region = "sin"  # Singapore — closest to Pakistan with good latency
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  HOST = "0.0.0.0"
+  PYTHONUNBUFFERED = "1"
+
+# HTTP service config — tells Fly how to route traffic to your app
+[[services]]
+  protocol = "tcp"
+  internal_port = 8000
+  auto_stop_machines = false   # Keep machine running (no cold starts)
+  auto_start_machines = true
+  min_machines_running = 1     # Always have at least 1 machine alive
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  # Health check — Fly pings this to know the app is ready
+  # Long timeout because sentence-transformers loads a ~90MB model at startup
+  [[services.http_checks]]
+    interval = "30s"
+    timeout = "120s"          # Give 2 min for model to load on cold start
+    grace_period = "120s"     # Don't kill machine for 2 min after boot
+    method = "GET"
+    path = "/health"
+    protocol = "http"
+
+# Machine sizing — shared-cpu-1x is free tier on Fly.io
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512             # 512MB — enough for FastAPI + sentence-transformers

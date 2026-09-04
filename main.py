@@ -161,7 +161,13 @@ async def chat_endpoint(payload: ChatRequest):
             cognitive_trace={"error": str(e), "status": "failed"}
         )
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Fly.io — returns 200 when app is ready."""
+    return {"status": "ok", "app": "hamsafar"}
+
 @app.get("/api/session/{session_id}")
+
 async def get_session_endpoint(session_id: str):
     """Retrieves the full active state and history of a session."""
     try:
