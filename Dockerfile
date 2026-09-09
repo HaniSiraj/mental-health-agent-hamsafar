@@ -16,11 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Step 1: Install CPU-only PyTorch FIRST (small ~300 MB vs 2 GB GPU version)
-# This prevents sentence-transformers from pulling the GPU torch automatically
-RUN pip install --no-cache-dir \
-    torch==2.2.2 \
-    --index-url https://download.pytorch.org/whl/cpu
+# Step 1: Install CPU-only PyTorch (latest, supports numpy 2.x)
+# Must be installed before requirements.txt so sentence-transformers uses CPU torch
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
 # Step 2: Install remaining app dependencies
 COPY requirements.txt .
