@@ -415,35 +415,35 @@ function initThreeJSScene() {
         ));
     }
 
-    // Material 1: Glowing Emissive Core (MeshStandardMaterial — r128 compatible)
+    // Material 1: Cyan emissive core — vivid on dark bg
     const solidMaterial = new THREE.MeshStandardMaterial({
         color: 0x0a1628,
         emissive: 0x22d3ee,
-        emissiveIntensity: 0.8,
-        opacity: 0.85,
+        emissiveIntensity: 0.9,
+        opacity: 0.88,
         transparent: true,
-        roughness: 0.2,
+        roughness: 0.15,
         metalness: 0.9,
     });
     solidOrb = new THREE.Mesh(geometry, solidMaterial);
     orbGroup.add(solidOrb);
 
-    // Material 2: Glowing Wireframe Outer Shell
+    // Material 2: Cyan wireframe outer shell
     const wireMaterial = new THREE.MeshBasicMaterial({
         color: 0x22d3ee,
         wireframe: true,
         transparent: true,
-        opacity: 0.35
+        opacity: 0.38
     });
     wireOrb = new THREE.Mesh(geometry.clone(), wireMaterial);
     wireOrb.scale.set(1.02, 1.02, 1.02); // Slightly larger than the core
     orbGroup.add(wireOrb);
 
-    // Material 3: Outer Glow Halo (made smaller: 1.8 instead of 2.8)
+    // Material 3: Cyan outer glow halo
     const glowMaterial = new THREE.MeshBasicMaterial({
         color: 0x22d3ee,
         transparent: true,
-        opacity: 0.06,
+        opacity: 0.07,
         side: THREE.BackSide
     });
     const glowSphere = new THREE.Mesh(
@@ -454,19 +454,19 @@ function initThreeJSScene() {
 
     scene.add(orbGroup);
 
-    // 5. Lighting — boosted for visibility
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+    // 5. Lighting for dark background
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.12);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x22d3ee, 2.0); // Strong Cyan
+    const dirLight1 = new THREE.DirectionalLight(0x22d3ee, 2.2);
     dirLight1.position.set(5, 5, 3);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x8b5cf6, 1.5); // Strong Purple
+    const dirLight2 = new THREE.DirectionalLight(0x8b5cf6, 1.6);
     dirLight2.position.set(-5, -3, 2);
     scene.add(dirLight2);
 
-    const pointLight = new THREE.PointLight(0x22d3ee, 1.5, 15); // Close-range glow
+    const pointLight = new THREE.PointLight(0x22d3ee, 1.8, 15);
     pointLight.position.set(0, 0, 3);
     scene.add(pointLight);
 
