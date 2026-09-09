@@ -36,6 +36,9 @@
             </div>
             
             <div class="header-actions">
+                <button id="kb-btn" class="btn btn-secondary" title="Knowledge Base Sources">
+                    <i class="fa-solid fa-database"></i> Sources
+                </button>
                 <button id="mood-history-btn" class="btn btn-secondary" title="Mood History">
                     <i class="fa-solid fa-chart-line"></i> Mood History
                 </button>
@@ -139,6 +142,155 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- KNOWLEDGE BASE PANEL (Collapsible) -->
+                <div id="kb-panel" class="kb-panel hidden">
+                    <div class="panel-header" id="kb-panel-header">
+                        <h2><i class="fa-solid fa-database telemetry-icon"></i> Knowledge Base Sources</h2>
+                        <button id="close-kb-panel" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="kb-agents-grid">
+
+                        <!-- SAFETY AGENT -->
+                        <div class="kb-agent-card">
+                            <div class="kb-agent-header">
+                                <div class="kb-agent-icon" style="background:linear-gradient(135deg,#FF6B8A,#C84B6B);">🛡️</div>
+                                <span class="kb-agent-name">Safety Guardian</span>
+                                <span class="kb-agent-role">Always-On</span>
+                            </div>
+                            <div class="kb-sources-list">
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📄</span>
+                                    <span class="kb-source-name">data/resources.json</span>
+                                    <span class="kb-source-count">5 hotlines</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">🏥</span>
+                                    <span class="kb-source-name">Umang · Taskeen · Karwan-e-Hayat</span>
+                                    <span class="kb-source-desc">Crisis · Peer · Clinic</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">🏥</span>
+                                    <span class="kb-source-name">Rozan · PAMH</span>
+                                    <span class="kb-source-desc">Helpline · Outpatient</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CBT AGENT -->
+                        <div class="kb-agent-card">
+                            <div class="kb-agent-header">
+                                <div class="kb-agent-icon" style="background:linear-gradient(135deg,#8B6FFF,#5B3FD9);">🧠</div>
+                                <span class="kb-agent-name">CBT Specialist</span>
+                                <span class="kb-agent-role">On-Demand</span>
+                            </div>
+                            <div class="kb-sources-list">
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📄</span>
+                                    <span class="kb-source-name">data/cbt-protocols/exercises.json</span>
+                                    <span class="kb-source-count">3 protocols</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📋</span>
+                                    <span class="kb-source-name">thought_record</span>
+                                    <span class="kb-source-desc">6-step negative thought reframe</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📋</span>
+                                    <span class="kb-source-name">worry_postponement</span>
+                                    <span class="kb-source-desc">Anxiety scheduling protocol</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📋</span>
+                                    <span class="kb-source-name">activity_scheduling</span>
+                                    <span class="kb-source-desc">Behavioural activation for depression</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PSYCHOEDUCATION AGENT -->
+                        <div class="kb-agent-card">
+                            <div class="kb-agent-header">
+                                <div class="kb-agent-icon" style="background:linear-gradient(135deg,#22D3EE,#0891B2);">📚</div>
+                                <span class="kb-agent-name">Psychoeducation</span>
+                                <span class="kb-agent-role">Specialist</span>
+                            </div>
+                            <div class="kb-sources-list">
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📄</span>
+                                    <span class="kb-source-name">data/psychoed/articles.json</span>
+                                    <span class="kb-source-count">4 articles</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📖</span>
+                                    <span class="kb-source-name">Understanding Anxiety &amp; Panic</span>
+                                    <span class="kb-source-desc">topic: anxiety</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📖</span>
+                                    <span class="kb-source-name">Recognizing Depression Signals</span>
+                                    <span class="kb-source-desc">topic: depression</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📖</span>
+                                    <span class="kb-source-name">Stress &amp; Academic Burnout</span>
+                                    <span class="kb-source-desc">topic: stress · burnout</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CULTURAL AGENT -->
+                        <div class="kb-agent-card">
+                            <div class="kb-agent-header">
+                                <div class="kb-agent-icon" style="background:linear-gradient(135deg,#34D399,#059669);">🌍</div>
+                                <span class="kb-agent-name">Cultural Context</span>
+                                <span class="kb-agent-role">Specialist</span>
+                            </div>
+                            <div class="kb-sources-list">
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📄</span>
+-                                    <span class="kb-source-name">data/cultural/articles.json</span>
+                                    <span class="kb-source-count">2 articles</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📖</span>
+                                    <span class="kb-source-name">Sabr, Tawakkul &amp; Professional Help</span>
+                                    <span class="kb-source-desc">topic: islamic coping</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">📖</span>
+                                    <span class="kb-source-name">Mental Health in Joint Families</span>
+                                    <span class="kb-source-desc">topic: family dynamics</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- REFLECTION AGENT + VECTOR DB -->
+                        <div class="kb-agent-card">
+                            <div class="kb-agent-header">
+                                <div class="kb-agent-icon" style="background:linear-gradient(135deg,#F59E0B,#B45309);">💭</div>
+                                <span class="kb-agent-name">Reflection Agent</span>
+                                <span class="kb-agent-role">Specialist</span>
+                            </div>
+                            <div class="kb-sources-list">
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">🤖</span>
+                                    <span class="kb-source-name">Groq · llama-3.1-70b-versatile</span>
+                                    <span class="kb-source-desc">LLM inference only</span>
+                                </div>
+                                <div class="kb-source-row">
+                                    <span class="kb-source-icon">🧬</span>
+                                    <span class="kb-source-name">Pinecone Vector DB</span>
+                                    <span class="kb-source-desc">RAG · all-MiniLM-L6-v2 embeddings</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
             <section class="telemetry-panel">
                 <div class="panel-card glassmorphism scrollable">
                     <div class="panel-header">

@@ -639,6 +639,24 @@ function animate() {
 // MOOD HISTORY DASHBOARD
 // ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
+// KNOWLEDGE BASE SOURCES PANEL TOGGLE
+// ----------------------------------------------------------------------------
+const kbBtn = document.getElementById('kb-btn');
+const kbPanel = document.getElementById('kb-panel');
+const closeKbPanel = document.getElementById('close-kb-panel');
+
+if (kbBtn) {
+    kbBtn.addEventListener('click', () => {
+        kbPanel.classList.toggle('hidden');
+    });
+}
+if (closeKbPanel) {
+    closeKbPanel.addEventListener('click', () => {
+        kbPanel.classList.add('hidden');
+    });
+}
+
 const moodHistoryBtn = document.getElementById('mood-history-btn');
 const moodHistoryPanel = document.getElementById('mood-history-panel');
 const closeMoodPanel = document.getElementById('close-mood-panel');
