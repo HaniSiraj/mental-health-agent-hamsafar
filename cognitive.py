@@ -139,7 +139,7 @@ async def run_bilingual_normalizer(raw_message: str) -> dict:
     logger.info("Running Bilingual Normalizer...")
     try:
         response = await groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": NORMALIZER_PROMPT},
                 {"role": "user", "content": raw_message}
@@ -162,7 +162,7 @@ async def run_safety_guardian(normalized_message: str) -> dict:
     logger.info("Running Always-On Safety Guardian...")
     try:
         response = await groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": SAFETY_PROMPT},
                 {"role": "user", "content": normalized_message}
@@ -184,7 +184,7 @@ async def generate_crisis_acknowledgment(normalized_message: str) -> str:
     """Generates a warm 1-sentence acknowledgment for crisis states (Tier 1/2)."""
     try:
         response = await groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "user", "content": f"Generate a single, short, compassionate sentence acknowledging the painful feelings the user just shared. Do not give advice. Do not ask any questions. Keep it under 15 words.\n\nUser distress message: {normalized_message}"}
             ],
@@ -209,7 +209,7 @@ async def run_supervisor(normalized_message: str, summary: str, active_turns: li
     
     try:
         response = await groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": SUPERVISOR_PROMPT},
                 {"role": "user", "content": user_input}
@@ -235,7 +235,7 @@ async def _run_psychoed_agent(normalized_text: str, history_str: str) -> tuple:
     """Runs the Psychoeducation specialist agent with RAG context and history."""
     context = await search_rag_context(normalized_text, "psychoed")
     res = await groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama3-70b-8192",
         messages=[
             {"role": "system", "content": PSYCHOED_PROMPT.format(context=context, history=history_str)},
             {"role": "user", "content": normalized_text}
@@ -247,7 +247,7 @@ async def _run_psychoed_agent(normalized_text: str, history_str: str) -> tuple:
 async def _run_reflection_agent(normalized_text: str, history_str: str) -> tuple:
     """Runs the Reflection specialist agent with conversation history."""
     res = await groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama3-70b-8192",
         messages=[
             {"role": "system", "content": REFLECTION_PROMPT.format(history=history_str)},
             {"role": "user", "content": normalized_text}
@@ -260,7 +260,7 @@ async def _run_cultural_agent(normalized_text: str, history_str: str) -> tuple:
     """Runs the Cultural Framing specialist agent with RAG context and history."""
     context = await search_rag_context(normalized_text, "cultural")
     res = await groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama3-70b-8192",
         messages=[
             {"role": "system", "content": CULTURAL_PROMPT.format(context=context, history=history_str)},
             {"role": "user", "content": normalized_text}
@@ -273,7 +273,7 @@ async def _run_referral_agent(normalized_text: str, history_str: str) -> tuple:
     """Runs the Resource Referral specialist agent with RAG context and history."""
     context = await search_rag_context(normalized_text, "resource")
     res = await groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama3-70b-8192",
         messages=[
             {"role": "system", "content": REFERRAL_PROMPT.format(context=context, history=history_str)},
             {"role": "user", "content": normalized_text}
@@ -297,7 +297,7 @@ async def _run_cbt_suggestion_agent(normalized_text: str, history_str: str) -> t
     )
     try:
         res = await groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-70b-8192",
             messages=[{"role": "user", "content": suggestion_prompt}],
             temperature=0.4,
             max_tokens=150
@@ -361,7 +361,7 @@ async def advance_cbt_protocol(session: dict, user_input: str) -> str:
         
         try:
             response = await groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama3-70b-8192",
                 messages=[{"role": "user", "content": summary_prompt}],
                 temperature=0.3
             )
@@ -442,7 +442,7 @@ async def run_cognitive_pipeline(session_id: str, raw_message: str, session: dic
         if preferred_lang == "ur":
             try:
                 trans_res = await groq_client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="llama3-8b-8192",
                     messages=[
                         {"role": "system", "content": ROMAN_URDU_TRANSLATOR},
                         {"role": "user", "content": locked_response}
@@ -469,7 +469,7 @@ async def run_cognitive_pipeline(session_id: str, raw_message: str, session: dic
         if preferred_lang == "ur":
             try:
                 trans_res = await groq_client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="llama3-8b-8192",
                     messages=[
                         {"role": "system", "content": ROMAN_URDU_TRANSLATOR},
                         {"role": "user", "content": out_of_scope_reply}
@@ -538,7 +538,7 @@ async def run_cognitive_pipeline(session_id: str, raw_message: str, session: dic
         
         try:
             response = await groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama3-70b-8192",
                 messages=[{"role": "user", "content": synthesis_prompt}],
                 temperature=0.2
             )
@@ -596,7 +596,7 @@ async def run_cognitive_pipeline(session_id: str, raw_message: str, session: dic
     logger.info("Running Synthesis Merge...")
     try:
         response = await groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": SYNTHESIS_PROMPT.format(
                     user_message=normalized_text,
