@@ -16,9 +16,9 @@ primary_region = "sin"  # Singapore — closest to Pakistan with good latency
 [[services]]
   protocol = "tcp"
   internal_port = 8000
-  auto_stop_machines = false   # Keep machine running (no cold starts)
+  auto_stop_machines = true    # Sleep when idle (free tier — saves cost)
   auto_start_machines = true
-  min_machines_running = 1     # Always have at least 1 machine alive
+  min_machines_running = 0     # Allow full sleep when no traffic
 
   [[services.ports]]
     port = 80
@@ -39,9 +39,9 @@ primary_region = "sin"  # Singapore — closest to Pakistan with good latency
     path = "/health"
     protocol = "http"
 
-# Machine sizing — 1GB RAM needed for sentence-transformers model load
+# Machine sizing — 256MB free tier (sentence-transformers lazy-loaded on first request)
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 1024
+  memory_mb = 256
 

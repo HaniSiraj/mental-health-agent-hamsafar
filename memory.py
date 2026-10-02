@@ -148,7 +148,7 @@ async def summarize_history(turns: list, existing_summary: str, groq_client) -> 
         )
         
         response = await groq_client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             max_tokens=150
